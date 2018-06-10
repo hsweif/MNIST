@@ -2,6 +2,7 @@ import tensorflow as tf
 import sys
 import numpy
 import csv
+import random
 
 pic_size = 784 #28*28
 train_data = []
@@ -142,17 +143,26 @@ def cnn_train():
     with tf.Session() as sess:
         saver = tf.train.Saver()
         sess.run(tf.global_variables_initializer())
-        l = len(train_data)
-        for i in range(1, l):
-            sys.stdout.write(' Training----> ' + str(i)+'\r')
-            sess.run(train_op, feed_dict = {y_label:[train_label[i]], x:[train_data[i]],dropout_input:0.5, dropout_fc:0.6})
-            if i % 5000 == 0:
+        testSet_size = 200
+        l = len(train_data) - testSet_size 
+        batch_size = 100
+        sz = l - batch_size - 1
+        for i in range(0, 3000):
+            sys.stdout.write(' Training----> ' + str(i)+ ' Batch...' + '\r')
+            t = random.randint(1,sz) 
+            sess.run(train_op, feed_dict = {y_label:train_label[t:t+batch_size], x:train_data[t:t+batch_size],dropout_input:0.5, dropout_fc:0.5})
+        #for i in range(1, l):
+        #    sys.stdout.write(' Training----> ' + str(i)+'\r')
+        #    sess.run(train_op, feed_dict = {y_label:[train_label[i]], x:[train_data[i]],dropout_input:0.5, dropout_fc:0.5})
+            if i % 500 == 0:
                 saver.save(sess, checkpoint_dir + 'cnn_model.ckpt', global_step = i+1)
-                imgs = train_data[i-500:i]
-                labels = train_label[i-500:i]
+                #imgs = train_data[i-500:i]
+                #labels = train_label[i-500:i]
+                imgs = train_data[-testSet_size:]
+                labels = train_label[-testSet_size:]
                 correct_y_pr = tf.equal(tf.argmax(y_label, 1), tf.argmax(y_pr, 1))
                 accuracy = tf.reduce_mean(tf.cast(correct_y_pr, tf.float32)) 
-                print("Train accuracy: " + str(accuracy.eval(session = sess, feed_dict = {x:imgs, y_label:labels, dropout_input:1, dropout_fc:1})))
+                print("train accuracy: " + str(accuracy.eval(session = sess, feed_dict = {x:imgs, y_label:labels, dropout_input:1, dropout_fc:1})))
 
 #cnn_train()
 #cnn_test()
