@@ -9,18 +9,18 @@ train_data = []
 train_label = []
 test_data = []
 test_label = []
-checkpoint_dir = '../lstmCheckPoint/'
-train_path = '../train.csv'
-test_path = '../test.csv'
-output_path = '../output_lstm.csv'
+checkpoint_dir = './lstmCheckPoint/'
+train_path = './train.csv'
+test_path = './test.csv'
+output_path = './output_lstm.csv'
 
 #Some parameters
 batch_size = 100
 time_step = 28
 input_size = 28
-learn_speed = 0.01 
+learn_speed = 1e-4 
 unit_num = 100
-iteration = 10001
+iteration = 20001
 output_num = 10 # 0 - 9
 testSet_size = 200
 
@@ -56,7 +56,7 @@ x = tf.reshape(image, [-1, time_step, input_size])
 y = tf.placeholder(tf.int32, [None, output_num])
 
 #define LSTM structure
-lstm_cell = tf.contrib.rnn.BasicLSTMCell(num_units = unit_num)
+lstm_cell = tf.contrib.rnn.BasicLSTMCell(num_units = unit_num) #总共有unit_num 个LSTM神经元
 outputs, final_state = tf.nn.dynamic_rnn(
         cell = lstm_cell,
         inputs = x,
@@ -64,6 +64,7 @@ outputs, final_state = tf.nn.dynamic_rnn(
         dtype = tf.float32,
         time_major = False,
         )
+
 output = tf.layers.dense(inputs=outputs[:,-1,:], units = output_num)
 loss = tf.losses.softmax_cross_entropy(onehot_labels = y, logits = output)
 train_op = tf.train.AdamOptimizer(learn_speed).minimize(loss)
@@ -82,8 +83,11 @@ for i in range(0, iteration):
     n = random.randint(1, sz)
     train_x, train_y = train_data[n:n+batch_size], train_label[n:n+batch_size] 
     _blank, train_loss = sess.run([train_op, loss], {image:train_x, y:train_y})
-    if i % 1000 == 0:
+    if i % 500 == 0:
         saver.save(sess,checkpoint_dir + 'lstm_model.ckpt', global_step = i+1)
         print()
         train_accuracy = sess.run(accuracy, {image:test_x, y:test_y})
         print('loss: %.5f' % train_loss, '|accuracy: %.5f' % train_accuracy)
+        if train_loss < 0.1:
+            break
+
